@@ -454,7 +454,7 @@ public class EventManager {
                                                     .setLore(lore)
                                                     .setCallback((num, clickType, slotActionType) -> {
                                                         if (clickType.isLeft) {
-                                                            if (RaidCommands.start(boss, player, itemStack) != 0) {
+                                                            if (RaidCommands.start(boss, null, player, itemStack) != 0) {
                                                                 itemStack.decrement(1);
                                                                 player.setStackInHand(hand, itemStack);
 
@@ -561,7 +561,7 @@ public class EventManager {
                                     bossInfo = nr.bossesConfig().getRandomBoss(category);
                                 }
 
-                                if (RaidCommands.start(bossInfo, player, itemStack) != 0) {
+                                if (RaidCommands.start(bossInfo, null, player, itemStack) != 0) {
                                     itemStack.decrement(1);
                                     player.setStackInHand(hand, itemStack);
 
@@ -569,7 +569,7 @@ public class EventManager {
                                 }
                             } else {
                                 Boss boss = nr.bossesConfig().getBoss(bossName);
-                                if (RaidCommands.start(boss, player, itemStack) != 0) {
+                                if (RaidCommands.start(boss, null, player, itemStack) != 0) {
                                     itemStack.decrement(1);
                                     player.setStackInHand(hand, itemStack);
 
@@ -676,8 +676,8 @@ public class EventManager {
                     }
                 }
 
-                event.setCancellationResult(ActionResult.PASS);
-                event.setCanceled(true);
+//                event.setCancellationResult(ActionResult.PASS);
+//                event.setCanceled(true);
             }
         });
     }

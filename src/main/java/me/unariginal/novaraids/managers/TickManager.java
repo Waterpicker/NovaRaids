@@ -333,7 +333,7 @@ public class TickManager {
                                 if (randomWeight < totalWeight) {
                                     Boss boss = nr.bossesConfig().getRandomBoss(category.id());
                                     if (boss != null) {
-                                        RaidCommands.start(boss, null, null);
+                                        RaidCommands.start(boss, null, null, null);
                                         break;
                                     } else {
                                         nr.logError("Failed to start scheduled raid. Boss was null!");
@@ -345,7 +345,7 @@ public class TickManager {
                             if (boss != null) {
                                 totalWeight += scheduleBoss.weight();
                                 if (randomWeight < totalWeight) {
-                                    RaidCommands.start(boss, null, null);
+                                    RaidCommands.start(boss, null, null, null);
                                     break;
                                 }
                             }

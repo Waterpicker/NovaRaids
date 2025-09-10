@@ -50,6 +50,7 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import org.apache.commons.lang3.StringUtils;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
@@ -75,9 +76,20 @@ public class RaidCommands {
                                     .then(
                                             CommandManager.argument("boss", StringArgumentType.string())
                                                     .suggests(new BossSuggestions())
+                                                    .then(
+                                                            CommandManager.argument("location", StringArgumentType.string())
+                                                                    .suggests(new LocationSuggestions())
+                                                                    .executes(ctx -> {
+                                                                        if (NovaRaids.LOADED) {
+                                                                            return start(nr.bossesConfig().getBoss(StringArgumentType.getString(ctx, "boss")), StringArgumentType.getString(ctx, "location"), ctx.getSource().getPlayer(), null);
+                                                                        } else {
+                                                                            return 0;
+                                                                        }
+                                                                    })
+                                                    )
                                                     .executes(ctx -> {
                                                         if (NovaRaids.LOADED) {
-                                                            return start(nr.bossesConfig().getBoss(StringArgumentType.getString(ctx, "boss")), ctx.getSource().getPlayer(), null);
+                                                            return start(nr.bossesConfig().getBoss(StringArgumentType.getString(ctx, "boss")), null, ctx.getSource().getPlayer(), null);
                                                         } else {
                                                             return 0;
                                                         }
@@ -87,7 +99,7 @@ public class RaidCommands {
                                             CommandManager.literal("random")
                                                     .executes(ctx -> {
                                                         if (NovaRaids.LOADED) {
-                                                            return start(nr.bossesConfig().getRandomBoss(), ctx.getSource().getPlayer(), null);
+                                                            return start(nr.bossesConfig().getRandomBoss(), null, ctx.getSource().getPlayer(), null);
                                                         } else {
                                                             return 0;
                                                         }
@@ -100,7 +112,7 @@ public class RaidCommands {
                                                                             String categoryStr = StringArgumentType.getString(ctx, "category");
                                                                             Boss boss = nr.bossesConfig().getRandomBoss(categoryStr);
 
-                                                                            return start(boss, ctx.getSource().getPlayer(), null);
+                                                                            return start(boss, null, ctx.getSource().getPlayer(), null);
                                                                         } else {
                                                                             return 0;
                                                                         }
@@ -1217,23 +1229,36 @@ public class RaidCommands {
         return 1;
     }
 
-    public static int start(Boss bossInfo, ServerPlayerEntity player, ItemStack startingItem) {
+    public static int start(Boss bossInfo, @Nullable String location, ServerPlayerEntity player, ItemStack startingItem) {
         if (NovaRaids.LOADED) {
             if (!nr.server().getPlayerManager().getPlayerList().isEmpty() || nr.config().runRaidsWithNoPlayers) {
                 if (bossInfo != null) {
-                    Map<String, Double> spawnLocations = bossInfo.spawnLocations();
                     Map<String, Double> validLocations = new HashMap<>();
 
-                    for (String key : spawnLocations.keySet()) {
+                    if(location == null) {
+                        Map<String, Double> spawnLocations = bossInfo.spawnLocations();
+                        for (String key : spawnLocations.keySet()) {
+                            boolean validSpawn = true;
+                            for (Raid raid : nr.activeRaids().values()) {
+                                if (raid.raidBossLocation().id().equalsIgnoreCase(key)) {
+                                    validSpawn = false;
+                                    break;
+                                }
+                            }
+                            if (validSpawn) {
+                                validLocations.put(key, spawnLocations.get(key));
+                            }
+                        }
+                    } else {
                         boolean validSpawn = true;
                         for (Raid raid : nr.activeRaids().values()) {
-                            if (raid.raidBossLocation().id().equalsIgnoreCase(key)) {
+                            if (raid.raidBossLocation().id().equalsIgnoreCase(location)) {
                                 validSpawn = false;
                                 break;
                             }
                         }
                         if (validSpawn) {
-                            validLocations.put(key, spawnLocations.get(key));
+                            validLocations.put(location, 1.0);
                         }
                     }
 

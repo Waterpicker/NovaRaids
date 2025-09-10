@@ -4,6 +4,7 @@ import com.mojang.authlib.GameProfile;
 import me.unariginal.novaraids.NovaRaids;
 import me.unariginal.novaraids.data.bosssettings.Boss;
 import me.unariginal.novaraids.managers.Raid;
+import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
@@ -13,6 +14,10 @@ public class TextUtils {
 
     public static Text deserialize(String text) {
         return nr.audience().asNative(MiniMessage.miniMessage().deserialize("<!i>" + text));
+    }
+
+    public static Component deserializeAdventure(String text) {
+        return MiniMessage.miniMessage().deserialize("<!i>" + text);
     }
 
     public static String parse(String text) {
