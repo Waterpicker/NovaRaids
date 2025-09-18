@@ -6,11 +6,10 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import me.unariginal.novaraids.NovaRaids;
 import me.unariginal.novaraids.data.Location;
-import net.kyori.adventure.platform.modcommon.impl.PlatformHooks;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.util.JsonHelper;
 import net.minecraft.util.math.Vec3d;
 import net.neoforged.fml.loading.FMLPaths;
-import net.neoforged.neoforge.common.NeoForge;
 
 import java.io.*;
 import java.util.ArrayList;
@@ -50,114 +49,40 @@ public class LocationsConfig {
         locations.clear();
         for (String key : root.keySet()) {
             JsonObject locationObject = root.getAsJsonObject(key);
-            String name = key;
-            double x = 0, y = 100, z = 0;
-            ServerWorld world = nr.server().getOverworld();
-            int borderRadius = 30;
-            int bossPushbackRadius = 5;
-            float bossFacingDirection = 0;
-            boolean useJoinLocation = false;
+            String name = JsonHelper.getString(locationObject, "name", key);
+
+            double x = JsonHelper.getDouble(locationObject, "x_pos", 0);
+            double y = JsonHelper.getDouble(locationObject, "y_pos", 100);
+            double z = JsonHelper.getDouble(locationObject, "z_pos", 0);
+
+            Vec3d pos = new Vec3d(x, y, z);
+
+            ServerWorld world = getWorld(locationObject);
+            int borderRadius = JsonHelper.getInt(locationObject, "border_radius", 30);
+            int bossPushbackRadius = JsonHelper.getInt(locationObject, "boss_pushback_radius", 5);
+            float bossFacingDirection = JsonHelper.getFloat(locationObject, "boss_facing_direction", 0);
+            boolean useJoinLocation = JsonHelper.getBoolean(locationObject, "use_join_location", false);
             double joinX = 0;
             double joinY = 100;
             double joinZ = 0;
             float yaw = 0;
             float pitch = 0;
 
-            if (locationObject.has("x_pos"))
-                x = locationObject.get("x_pos").getAsDouble();
-            locationObject.remove("x_pos");
-            locationObject.addProperty("x_pos", x);
+            if (locationObject.has("join_location")) {
+                JsonObject joinLocationObject = locationObject.get("join_location").getAsJsonObject();
+                joinX = JsonHelper.getDouble(joinLocationObject, "x_pos", joinX);
+                joinY = JsonHelper.getDouble(joinLocationObject, "y_pos", joinY);
+                joinZ = JsonHelper.getDouble(joinLocationObject, "z_pos", joinZ);
 
-            if (locationObject.has("y_pos"))
-                y = locationObject.get("y_pos").getAsDouble();
-            locationObject.remove("y_pos");
-            locationObject.addProperty("y_pos", y);
-
-            if (locationObject.has("z_pos"))
-                z = locationObject.get("z_pos").getAsDouble();
-            locationObject.remove("z_pos");
-            locationObject.addProperty("z_pos", z);
-
-            Vec3d pos = new Vec3d(x, y, z);
-
-            if (locationObject.has("world")) {
-                String worldPath = locationObject.get("world").getAsString();
-                boolean found = false;
-                for (ServerWorld w : nr.server().getWorlds()) {
-                    String id = w.getRegistryKey().getValue().toString();
-                    String path = w.getRegistryKey().getValue().getPath();
-                    if (id.equals(worldPath) || path.equals(worldPath)) {
-                        world = w;
-                        found = true;
-                        break;
-                    }
-                }
-                if (!found) {
-                    nr.logError("World " + worldPath + " not found. Using overworld.");
-                }
+                yaw = JsonHelper.getFloat(joinLocationObject, "yaw", yaw);
+                pitch = JsonHelper.getFloat(joinLocationObject, "pitch", pitch);
             }
-            locationObject.remove("world");
-            locationObject.addProperty("world", world.getRegistryKey().getValue().toString());
-
-            if (locationObject.has("name"))
-                name = locationObject.get("name").getAsString();
-            locationObject.remove("name");
-            locationObject.addProperty("name", name);
-
-            if (locationObject.has("border_radius"))
-                borderRadius = locationObject.get("border_radius").getAsInt();
-            locationObject.remove("border_radius");
-            locationObject.addProperty("border_radius", borderRadius);
-
-            if (locationObject.has("boss_pushback_radius"))
-                bossPushbackRadius = locationObject.get("boss_pushback_radius").getAsInt();
-            locationObject.remove("boss_pushback_radius");
-            locationObject.addProperty("boss_pushback_radius", bossPushbackRadius);
-
-            if (locationObject.has("boss_facing_direction"))
-                bossFacingDirection = locationObject.get("boss_facing_direction").getAsFloat();
-            locationObject.remove("boss_facing_direction");
-            locationObject.addProperty("boss_facing_direction", bossFacingDirection);
-
-            if (locationObject.has("use_join_location"))
-                useJoinLocation = locationObject.get("use_join_location").getAsBoolean();
-            locationObject.remove("use_join_location");
-            locationObject.addProperty("use_join_location", useJoinLocation);
-
-            JsonObject joinLocationObject = new JsonObject();
-            if (locationObject.has("join_location"))
-                joinLocationObject = locationObject.get("join_location").getAsJsonObject();
-
-            if (joinLocationObject.has("x_pos"))
-                joinX = joinLocationObject.get("x_pos").getAsDouble();
-            joinLocationObject.remove("x_pos");
-            joinLocationObject.addProperty("x_pos", joinX);
-
-            if (joinLocationObject.has("y_pos"))
-                joinY = joinLocationObject.get("y_pos").getAsDouble();
-            joinLocationObject.remove("y_pos");
-            joinLocationObject.addProperty("y_pos", joinY);
-
-            if (joinLocationObject.has("z_pos"))
-                joinZ = joinLocationObject.get("z_pos").getAsDouble();
-            joinLocationObject.remove("z_pos");
-            joinLocationObject.addProperty("z_pos", joinZ);
-
-            if (joinLocationObject.has("yaw"))
-                yaw = joinLocationObject.get("yaw").getAsFloat();
-            joinLocationObject.remove("yaw");
-            joinLocationObject.addProperty("yaw", yaw);
-
-            if (joinLocationObject.has("pitch"))
-                pitch = joinLocationObject.get("pitch").getAsFloat();
-            joinLocationObject.remove("pitch");
-            joinLocationObject.addProperty("pitch", pitch);
-
-            locationObject.remove("join_location");
-            locationObject.add("join_location", joinLocationObject);
 
             Vec3d join_pos = new Vec3d(joinX, joinY, joinZ);
-            locations.add(new Location(key, name, pos, world, borderRadius, bossPushbackRadius, bossFacingDirection, useJoinLocation, join_pos, yaw, pitch));
+
+            String onComplete = JsonHelper.getString(locationObject, "on_complete", "");
+
+            locations.add(new Location(key, name, pos, world, borderRadius, bossPushbackRadius, bossFacingDirection, useJoinLocation, join_pos, yaw, pitch, onComplete));
         }
 
         for (Location location : locations) {
@@ -180,6 +105,7 @@ public class LocationsConfig {
             joinLocationObject.addProperty("yaw", location.yaw());
             joinLocationObject.addProperty("pitch", location.pitch());
             locationObject.add("join_location", joinLocationObject);
+            locationObject.addProperty("on_complete", location.onComplete());
 
             root.add(location.id(), locationObject);
         }
@@ -190,6 +116,28 @@ public class LocationsConfig {
         Writer writer = new FileWriter(file);
         gson.toJson(root, writer);
         writer.close();
+    }
+
+    private ServerWorld getWorld(JsonObject locationObject) {
+        String worldPath = locationObject.get("world").getAsString();
+
+        ServerWorld world = this.nr.server().getOverworld();
+
+        boolean found = false;
+        for (ServerWorld w : nr.server().getWorlds()) {
+            String id = w.getRegistryKey().getValue().toString();
+            String path = w.getRegistryKey().getValue().getPath();
+            if (id.equals(worldPath) || path.equals(worldPath)) {
+                world = w;
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            nr.logError("World " + worldPath + " not found. Using overworld.");
+        }
+
+        return world;
     }
 
     public Location getLocation(String key) {

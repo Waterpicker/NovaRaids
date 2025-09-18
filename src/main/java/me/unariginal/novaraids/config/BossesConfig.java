@@ -13,13 +13,13 @@ import com.cobblemon.mod.common.pokemon.*;
 import com.google.gson.*;
 import com.mojang.serialization.JsonOps;
 import me.unariginal.novaraids.NovaRaids;
+import me.unariginal.novaraids.data.Category;
 import me.unariginal.novaraids.data.Contraband;
 import me.unariginal.novaraids.data.bosssettings.*;
-import me.unariginal.novaraids.data.Category;
 import me.unariginal.novaraids.data.items.Pass;
 import me.unariginal.novaraids.data.items.RaidBall;
 import me.unariginal.novaraids.data.items.Voucher;
-import me.unariginal.novaraids.data.rewards.*;
+import me.unariginal.novaraids.data.rewards.DistributionSection;
 import net.minecraft.component.ComponentChanges;
 import net.minecraft.item.Item;
 import net.minecraft.item.Items;
@@ -1063,6 +1063,10 @@ public class BossesConfig {
                 catchPlacements
         );
 
+        var onDefeat = readStringList(root, "onDefeat");
+        var onVictory = readStringList(root, "onVictory");
+        var onError = readStringList(root, "onError");
+
         bosses.add(new Boss(
                 bossId,
                 category_name,
@@ -1077,7 +1081,10 @@ public class BossesConfig {
                 locations,
                 itemSettings,
                 raidDetails,
-                catchSettings
+                catchSettings,
+                onDefeat,
+                onVictory,
+                onError
         ));
 
         file.delete();
@@ -1086,6 +1093,23 @@ public class BossesConfig {
         Writer writer = new FileWriter(file);
         gson.toJson(root, writer);
         writer.close();
+    }
+
+    private List<String> readStringList(JsonObject node, String name) {
+        if(node.has(name)) {
+            var json = node.get(name);
+
+            if(json.isJsonArray()) {
+                return json.getAsJsonArray().asList().stream()
+                        .filter(JsonElement::isJsonPrimitive)
+                        .map(JsonElement::getAsJsonPrimitive)
+                        .filter(JsonPrimitive::isString)
+                        .map(JsonPrimitive::getAsString)
+                        .toList();
+            }
+        }
+
+        return List.of();
     }
 
     public Boss getRandomBoss(String category) {

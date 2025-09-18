@@ -34,6 +34,7 @@ import net.minecraft.text.Text;
 import net.minecraft.util.UserCache;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
+import net.neoforged.neoforge.server.ServerLifecycleHooks;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.IOException;
@@ -122,6 +123,15 @@ public class Raid {
         }
 
         endBattles();
+
+        if(!raidBossLocation.onComplete().isEmpty()) {
+            System.out.println("Testing onComplete");
+
+            var commandSOurce = ServerLifecycleHooks.getCurrentServer().getCommandSource();
+            var commandExecutor = ServerLifecycleHooks.getCurrentServer().getCommandManager();
+
+            commandExecutor.executeWithPrefix(commandSOurce, raidBossLocation.onComplete());
+        }
 
         List<EmptyPokeBallEntity> pokeballs = new ArrayList<>(pokeballsCapturing);
         for (EmptyPokeBallEntity entity : pokeballs) {
@@ -213,6 +223,9 @@ public class Raid {
         } else {
             stage = -1;
             participatingBroadcast(TextUtils.deserialize(TextUtils.parse(messages.getMessage("not_enough_players"), this)));
+
+            onError(participantsOnline());
+
             if (raidBossCategory.requirePass()) {
                 if (startingItem != null) {
                     ServerPlayerEntity player = nr.server().getPlayerManager().getPlayer(startedBy);
@@ -234,8 +247,12 @@ public class Raid {
     public void raidLost() {
         stage = -1;
         tasks.clear();
+
         raidEndTime = nr.server().getOverworld().getTime();
         participatingBroadcast(TextUtils.deserialize(TextUtils.parse(messages.getMessage("out_of_time"), this)));
+
+        onDefeat(participantsOnline());
+
         if (WebhookHandler.webhookToggle && WebhookHandler.failedEmbedEnabled && webhook != 0) {
             try {
                 WebhookHandler.sendFailedWebhook(webhook, this);
@@ -367,6 +384,8 @@ public class Raid {
             participatingBroadcast(TextUtils.deserialize(TextUtils.parse(messages.getMessage("catch_phase_end"), this)));
         }
         participatingBroadcast(TextUtils.deserialize(TextUtils.parse(messages.getMessage("raid_end"), this)));
+
+        onVictory(participantsOnline());
     }
 
     public void handleRewards() {
@@ -998,5 +1017,51 @@ public class Raid {
                 clearToDelete = true;
             }
         }
+    }
+
+    protected void runnCommands(List<String> commands, List<ServerPlayerEntity> players) {
+        var commandSOurce = ServerLifecycleHooks.getCurrentServer().getCommandSource();
+        var commandExecutor = ServerLifecycleHooks.getCurrentServer().getCommandManager();
+
+        if(!raidBossLocation.onComplete().isEmpty()) {
+            System.out.println("Testing onComplete");
+
+            commandExecutor.executeWithPrefix(commandSOurce, raidBossLocation.onComplete());
+        }
+
+        players.forEach(player -> {
+            var name = player.getNameForScoreboard();
+
+            System.out.println("Hoi Annoyed: " + name);
+
+            for (String command : commands) {
+                System.out.println("Hoi Running comamnds: " + command);
+
+                command = command.replace("%player%", name);
+                command = command.replace("%boss%", bossInfo.bossId());
+                commandExecutor.executeWithPrefix(commandSOurce, command);
+            }
+        });
+    }
+
+    protected void onDefeat(List<ServerPlayerEntity> players) {
+        runnCommands(bossInfo.onDefeat(), players);
+    }
+
+    protected void onError(List<ServerPlayerEntity> players) {
+        runnCommands(bossInfo.onError(), players);
+    }
+
+    protected void onVictory(List<ServerPlayerEntity> players) {
+        runnCommands(bossInfo.onVictory(), players);
+    }
+
+    private List<ServerPlayerEntity> participantsOnline() {
+        List<ServerPlayerEntity> out = new ArrayList<>();
+        for (UUID id : participatingPlayers) {
+            ServerPlayerEntity p = nr.server().getPlayerManager().getPlayer(id);
+            if (p != null) out.add(p);
+        }
+        return out;
     }
 }

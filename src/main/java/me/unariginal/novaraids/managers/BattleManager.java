@@ -233,7 +233,7 @@ public class BattleManager {
             errors.getParticipantErrors().get(wildActor).add(BattleStartError.Companion.alreadyInBattle(wildActor));
         }
 
-        playerActor.setBattleTheme(pokemonEntity.getBattleTheme());
+//        playerActor.setBattleTheme(pokemonEntity.getBattleTheme()); TODO: Renable when we don't have to deal with 1.7 being in flux.
 
         if (errors.isEmpty()) {
             return BattleRegistry.INSTANCE.startBattle(battleFormat, new BattleSide(playerActor), new BattleSide(wildActor), true).ifSuccessful(pokemonBattle -> {

@@ -2,6 +2,7 @@ package me.unariginal.novaraids.data.bosssettings;
 
 import me.unariginal.novaraids.utils.RandomUtils;
 
+import java.util.List;
 import java.util.Map;
 
 public record Boss(String bossId,
@@ -17,7 +18,10 @@ public record Boss(String bossId,
                    Map<String, Double> spawnLocations,
                    ItemSettings itemSettings,
                    RaidDetails raidDetails,
-                   CatchSettings catchSettings) {
+                   CatchSettings catchSettings,
+                   List<String> onDefeat,
+                   List<String> onVictory,
+                   List<String> onError) {
 
     public String chooseLocation() {
         Map.Entry<?, Double> entry = RandomUtils.getRandomEntry(spawnLocations);

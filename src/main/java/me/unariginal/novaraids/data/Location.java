@@ -13,5 +13,6 @@ public record Location(String id,
                        boolean useSetJoinLocation,
                        Vec3d joinLocation,
                        float yaw,
-                       float pitch) {
+                       float pitch,
+                       String onComplete) {
 }
